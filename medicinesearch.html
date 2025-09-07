@@ -225,7 +225,7 @@ async function getMedicineInfo() {
     outputDiv.innerHTML = `<div class="result">⏳ Searching for <b>${medName}</b>...</div>`;
 
     try {
-        const res = await fetch(`/api/medicine/${medName}`);
+       const res = await fetch(`https://backend-black.vercel.app/api/medicine/${medName}`);
         const data = await res.json();
 
         if (!res.ok) {
