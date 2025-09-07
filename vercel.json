@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "style.css",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/signup",
+      "dest": "/signup.html"
+    },
+    {
+      "src": "/medicinesearch",
+      "dest": "/medicinesearch.html"
+    },
+    {
+      "src": "/chatBot",
+      "dest": "/chatBot.html"
+    },
+    {
+      "src": "/map",
+      "dest": "/map.html"
+    },
+    {
+      "src": "/FAQs",
+      "dest": "/FAQs.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
