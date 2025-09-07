@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediWb-Map</title>
+
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<style>
+body { 
+margin:0;
+font-family: 'Segoe UI', sans-serif; 
+background:rgba(139, 201, 139, 0.486);
+}
+.navbar{
+    width: 100%;
+    height: 10%;
+    background-color: rgb(13, 88, 42);
+    transform: translateY(-100px);
+    z-index: 999;
+    backdrop-filter: blur(7px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.logo{
+    margin-left: 60px;
+}
+.logo a{
+    text-decoration: none;
+    color: white;
+    font-size: 2.3rem;
+}
+.signup{
+    margin-right: 60px;
+    text-decoration: none;
+    background-color: transparent;
+    padding: 6px 15px;
+    border-radius: 50px;
+    border: 2px solid white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    text-align: center;
+}
+.signup:hover{
+    background-color: rgba(139, 201, 139, 0.486);
+    border: 2px solid white;
+}
+.signup a{
+    color: white;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+.signup li a:hover{
+    cursor: pointer;
+}
+.nav-links{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+}
+.nav-links li a:hover{
+    cursor: pointer;
+    color:rgba(139, 201, 139, 0.486);
+}
+.nav-links li a{
+    text-decoration: none;
+    color: white;
+    font-size: 0.95rem;
+}
+.wrapper { 
+max-width:1200px; 
+margin:100px auto; 
+padding:20px;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.card { 
+width: 100%;
+}
+.card h1,.card h3{
+    color:rgb(13, 88, 42);
+}
+.card P{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+button { 
+padding:10px 20px; 
+border:none; 
+background:rgb(13, 88, 42); 
+color:#fff; 
+border-radius:50px; 
+cursor:pointer; 
+}
+button:hover { 
+background:transparent; 
+border:2px solid rgb(13, 88, 42);
+color:black;
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+#map { 
+height:300px; 
+width:100%; 
+border-radius:12px; 
+margin-top:15px; 
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+ .wrapper { margin: 90px 16px; }
+ .logo { margin-left: 20px; }
+ .signup { margin-right: 20px; }
+ .nav-links { gap: 16px; }
+ #map { height: 260px; }
+ /* Keep navbar visible on mobile/tablets */
+ .navbar { height: auto; padding: 10px 0; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+ .nav-links { display: none; }
+ #map { height: 240px; }
+ .card h1 { font-size: 1.6rem; }
+ .card h3 { font-size: 1.2rem; }
+}
+
+@media (max-width: 600px) {
+ .wrapper { margin: 80px 12px; padding: 16px; }
+ button { width: 100%; }
+ #map { height: 220px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+            <div class="logo"><a href=""><span>Med</span>iW<span>b</span></a></div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="medicineSearch.html">Medicines</a></li>
+                <li><a href="chatBot.html">Chatbot</a></li>
+                <li><a href="map.html">Map</a></li>
+                <li><a href="FAQs.html">FAQs</a></li>
+                <li><span id="navEmail" style="margin-left:10px; color:white; font-weight:600;"></span></li>
+                <li><a id="logoutLink" href="#" style="margin-left:6px; color:white; display:none;">Logout</a></li>
+            </ul>
+            <!-- <button class="signup"><a href="/login.html">Sign Up</a></button>
+                <button class="signup"><a href="/signup.html"">Sign Up</a></button> -->
+        </div>
+
+<!-- Map Card -->
+<div class="wrapper">
+    <div class="card">
+        <h1>Location</h1>
+        <p>Locate nearby hospitals, clinics, and pharmacies in real time. This ensures quick access to essential healthcare facilities, especially in urgent situations. Whether it’s finding the closest pharmacy for a medicine or reaching a hospital in an emergency, the map provides accurate and reliable support at the right time.</p>
+        <h3>Nearby Pharmacies</h3>
+        <button id="findStoresBtn" onclick="findNearbyPharmacies()">Check</button>
+        
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+let map, userLocation, pharmaciesLayer;
+
+// Auth guard: redirect to login if not authenticated
+(function(){
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login.html';
+        return;
+    }
+})();
+
+// Navbar email display
+(function(){
+    const email = localStorage.getItem('email');
+    const token = localStorage.getItem('token');
+    const emailSpan = document.getElementById('navEmail');
+    const logoutLink = document.getElementById('logoutLink');
+    if (email && token) {
+        if (emailSpan) emailSpan.textContent = email;
+        if (logoutLink) {
+            logoutLink.style.display = 'inline';
+            logoutLink.addEventListener('click', function(e){
+                e.preventDefault();
+                localStorage.removeItem('email');
+                localStorage.removeItem('token');
+                window.location.href = '/index.html';
+            });
+        }
+    }
+})();
+
+// Map initialize karuchu
+function initMap() {
+    map = L.map('map').setView([20, 77], 5); // India center
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            userLocation = [pos.coords.latitude, pos.coords.longitude];
+            map.setView(userLocation, 15);
+            L.marker(userLocation).addTo(map).bindPopup("📍 You are here").openPopup();
+        });
+    }
+}
+
+// Find nearby pharmacies
+async function findNearbyPharmacies() {
+    if (!userLocation) return alert("⚠️ Location not available yet.");
+
+    const [lat, lon] = userLocation;
+    const query = `
+        [out:json];
+        ( node["amenity"="pharmacy"](around:3000,${lat},${lon}); );
+        out;
+    `;
+    const url = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    if (pharmaciesLayer) map.removeLayer(pharmaciesLayer);
+    pharmaciesLayer = L.layerGroup().addTo(map);
+
+    data.elements.forEach(p => {
+        L.marker([p.lat, p.lon]).addTo(pharmaciesLayer).bindPopup("🏥 " + (p.tags.name || "Pharmacy"));
+    });
+}
+
+// Page load re map initialize
+window.onload = initMap;
+</script>
+</body>
+
+</html>

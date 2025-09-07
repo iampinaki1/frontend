@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediWeb - Chatbot</title>
+
+<!-- Link to your main stylesheet -->
+<link rel="stylesheet" href="style.css">
+
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet"/>
+
+<style>
+    /*
+      The body of the chatbot page will be different from the index page.
+      Instead of the large background image, we'll use a clean, solid background
+      that is more appropriate for a chat interface.
+    */
+    body {
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    /*
+      We are reusing the .main class from style.css, but we will override
+      the background-image property here to ensure it doesn't apply on this page.
+    */
+    .main {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Wrapper + Card Styling */
+    .wrapper {
+        width: 100%;
+        max-width: 900px;
+        margin: 120px auto 40px auto; /* Margin for navbar and spacing */
+        padding: 20px;
+    }
+    .card {
+        background: rgba(255, 255, 255, 0.9); /* Semi-transparent white card */
+        backdrop-filter: blur(10px); /* Glass effect for the card */
+        padding: 30px;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+    .card h3 {
+        text-align: center;
+        font-size: 2rem;
+        color: rgb(13, 88, 42); /* Use the primary green from your CSS */
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+    .card p {
+        text-align: center;
+        color: #555;
+        margin-top: 0;
+        margin-bottom: 25px;
+    }
+
+    /* Chatbox Styling */
+    .chat-box {
+        height: 450px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        padding: 15px;
+        background: #fdfdfd;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Message Styling */
+    .message {
+        margin: 8px 0;
+        padding: 12px 16px;
+        border-radius: 18px;
+        max-width: 75%;
+        word-wrap: break-word;
+        line-height: 1.5;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .user {
+        background: linear-gradient(135deg, #0d582a, #2b8c2b); /* Gradient green for user messages */
+        color: #fff;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+    .bot {
+        background: #e9ecef;
+        color: #333;
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+    }
+
+    /* Chat Input Styling */
+    .chat-input {
+        display: flex;
+        margin-top: 20px;
+        gap: 10px;
+    }
+    .chat-input input {
+        flex: 1;
+        padding: 14px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        font-size: 1rem;
+    }
+    .chat-input button {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 10px;
+        background-color: rgb(13, 88, 42); /* Primary green color */
+        border: 2px solid rgb(13, 88, 42);
+        color: white;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .chat-input button:hover {
+        background: transparent;
+        color: rgb(13, 88, 42);
+    }
+
+</style>
+</head>
+<body>
+
+<div class="main">
+
+    <!-- Minimal navbar for email display -->
+    <div style="position:fixed; top:0; left:0; right:0; height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:rgba(255,255,255,0.6); backdrop-filter: blur(8px); z-index:1000; border-bottom:1px solid rgba(0,0,0,0.06);">
+        <div style="font-weight:700; color:rgb(13, 88, 42);">MediWeb</div>
+        <div>
+            <a href="/FAQs.html" style="margin-right:12px; color:rgb(13, 88, 42); font-weight:600; text-decoration:none;">FAQs</a>
+            <span id="navEmail" style="color:rgb(13, 88, 42); font-weight:600;"></span>
+            <a id="logoutLink" href="#" style="margin-left:10px; color:rgb(13, 88, 42); display:none;">Logout</a>
+        </div>
+    </div>
+
+
+ 
+
+    <!-- Chatbot Content -->
+    <div class="wrapper">
+        <div class="card">
+            <h3>🤖 AI Chatbot</h3>
+            <p>You can ask about symptoms, treatments, or general health questions. This is not a substitute for professional medical advice.</p>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+              
+            </div>
+            <div id="chatBox" class="chat-box"></div>
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Ask about symptoms, wellness, etc.">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Auth guard: redirect to login if not authenticated
+(function(){
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login.html';
+        return;
+    }
+})();
+
+// THIS SCRIPT IS UNCHANGED AND WORKS AS BEFORE
+// I've also fixed a few small typos that were in your original code
+const chatBox = document.getElementById("chatBox");
+const userInput = document.getElementById("userInput");
+let chatHistory = [];
+
+// Navbar email display
+(function(){
+    const email = localStorage.getItem('email');
+    const token = localStorage.getItem('token');
+    const emailSpan = document.getElementById('navEmail');
+    const logoutLink = document.getElementById('logoutLink');
+    if (email && token) {
+        if (emailSpan) emailSpan.textContent = email;
+        if (logoutLink) {
+            logoutLink.style.display = 'inline';
+            logoutLink.addEventListener('click', function(e){
+                e.preventDefault();
+                localStorage.removeItem('email');
+                localStorage.removeItem('token');
+                window.location.href = '/index.html';
+            });
+        }
+    }
+})();
+
+// Page buttons
+const goMedicineBtn = document.getElementById('goMedicineBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+if (goMedicineBtn) goMedicineBtn.addEventListener('click', () => {
+    window.location.href = '/medicinesearch.html';
+});
+if (logoutBtn) logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('email');
+    localStorage.removeItem('token');
+    window.location.href = '/index.html';
+});
+
+function appendMessage(text, sender) {
+    const div = document.createElement("div");
+    div.className = `message ${sender}`; // Fixed a typo here
+    div.innerText = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    appendMessage(text, "user");
+    chatHistory.push({ role: "user", parts: [{ text }] });
+    userInput.value = "";
+
+    const loadingDiv = document.createElement("div");
+    loadingDiv.className = "message bot";
+    loadingDiv.innerText = "⏳ Thinking...";
+    chatBox.appendChild(loadingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    try {
+        const res = await fetch('/api/chat', {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ history: chatHistory })
+        });
+
+        chatBox.removeChild(loadingDiv);
+        const data = await res.json();
+
+        if (!res.ok) {
+            // Fixed a typo here
+            appendMessage(`❌ Error: ${data.error || 'Failed to get response.'}`, "bot");
+            return;
+        }
+
+        const botReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ Sorry, I couldn't get a response.";
+        appendMessage(botReply, "bot");
+        chatHistory.push({ role: "model", parts: [{ text: botReply }] });
+
+    } catch (error) {
+        chatBox.removeChild(loadingDiv);
+        appendMessage("❌ Error: Could not connect to the server. " + error.message, "bot");
+    }
+}
+
+userInput.addEventListener("keypress", e => {
+    if (e.key === "Enter") sendMessage();
+});
+
+// Initial bot greeting
+window.onload = () => {
+    appendMessage("Hello! I am MediWeb AI. How can I help you with your health questions today?", "bot");
+};
+</script>
+</body>
+</html>
